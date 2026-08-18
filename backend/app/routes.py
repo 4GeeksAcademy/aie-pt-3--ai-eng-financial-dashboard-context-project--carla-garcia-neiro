@@ -245,6 +245,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+
 @router.get("/api/metrics", response_model=list[FinancialMovement])
 def get_metrics(
     start_date: date | None = Query(default=None),
