@@ -20,3 +20,24 @@ Leyenda: ✅ verificada en código · ❌ incorrecta (se anota corrección) · �
 | 11 | Backend arranca con uvicorn + debugpy + reload | `backend/Dockerfile` | `cat backend/Dockerfile` | ❓ |
 | 12 | `AGENTS.md` menciona reglas/memoria pero no existen `.agents/` ni `memory-bank/` | `AGENTS.md` | `ls -la .agents memory-bank` | ✅ |
 
+## Fase 2: hallazgos de ingeniería
+
+Fuente: análisis de convenciones y riesgos generado por el coding agent.
+Leyenda: ✅ verificada · ❌ incorrecta (con corrección) · ⚠️ impreciso · ❓ sin verificar
+
+| # | Afirmación del agent | Cómo verificarlo | Qué encontré | Resultado |
+|---|---|---|---|---|
+| 1 | Backend con 2 módulos de app (`main.py`, `routes.py`) y 2 archivos de test | `find . -name "*.py" -not -path "*/node_modules/*"` | Solo hay 5 `.py`: `main.py`, `routes.py`, `__init__.py`, `conftest.py`, `test_routes.py` | ✅ |
+| 2 | Se revisaron "7 archivos de backend" | mismo comando | Solo hay 5 `.py`; los otros 2 no son Python y el agent no dijo cuáles | ⚠️ impreciso |
+| 3 | Modelos, datos, filtros, cálculos y rutas viven en `routes.py:1-122` (y cita también `routes.py:243-388`) | `wc -l backend/app/routes.py` | El archivo tiene 392 líneas, así que los rangos caben. Pero `1-122` no puede incluir las rutas que el agent sitúa en 243+ | ⚠️ impreciso |
+| 4 | Frontend pide `/api/metrics` y calcula KPIs en el navegador, aunque el backend tiene rutas agregadas | `grep -n "fetch\|/api" frontend/src/App.tsx` | (completa) | ❓ |
+| 5 | `mock-data.ts` no está importado en ningún sitio | `grep -rn "mock-data" frontend/src/` | (completa) | ❓ |
+| 6 | Hay 9 rutas y 8 usan `response_model` | mismo `grep` | 9 rutas confirmadas; `/health` (l.243) sin `response_model`, las otras 8 con él | ✅ |
+| 7 | 15 tests de backend y 5 de frontend | `grep -c "def test_" backend/tests/test_routes.py` y `grep -c "it(\|test(" frontend/src/lib/financial-utils.test.ts` | (completa) | ❓ |
+| 8 | No hay validación de `start_date <= end_date` | `sed -n '107,145p'` y `grep -n "start_date\|end_date"` en `routes.py` | `filter_movements_by_date` (l.107-122) filtra cada fecha por separado sin compararlas; si start > end devuelve lista vacía sin error | ✅ |
+| 9 | No hay `.github/`, `.agents/` ni `memory-bank/` | `ls -la .github .agents memory-bank` | Los tres devuelven "No such file or directory" | ✅ |
+| 10 | CORS abierto: cualquier origen, método y header, con credenciales | `sed -n '1,20p' backend/app/main.py` | (completa) | ❓ |
+| 11 | Naming consistente en los 15 archivos de `src` (componentes kebab-case) | `ls frontend/src frontend/src/components/*` | (completa; ojo con `App.tsx`) | ❓ |
+| 12 | Estilo de formato inconsistente (comillas y `;`) y sin script de formato | `grep -n "prettier\|\"lint\"\|\"format\"" frontend/package.json` | (completa) | ❓ |
+| 13 | Los dos Dockerfiles están citados como `Dockerfile:1-13` (misma ruta) | `find . -name Dockerfile -not -path "*/node_modules/*"` | (completa) | ❓ |
+
